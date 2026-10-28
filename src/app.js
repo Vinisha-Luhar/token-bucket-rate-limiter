@@ -2,12 +2,14 @@ const express = require("express");
 const helmet = require("helmet");
 
 const health_routes = require("./routes/health_routes.js");
+const admin_routes = require("./routes/admin_routes.js");
 
 const app = express();
 
 app.use(helmet());
 app.use(express.json({limit:"16kb"}));
 app.use(health_routes);
+app.use("/api/v1/admin",admin_routes);
 
 app.use((req,res) => {
     return res.status(404).json({
@@ -29,12 +31,19 @@ app.use((err,req,res,next)=>{
         });
     }
 
-     console.error("Unexpected application error:", err.message);
+     const statusCode = err.statusCode || 500;
 
-    return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-    });
+  if (statusCode >= 500) {
+    console.error("Application error:", err.message);
+  }
+
+  return res.status(statusCode).json({
+    success: false,
+    message:
+      statusCode >= 500
+        ? "Internal server error"
+        : err.message,
+  });
 
 });
 

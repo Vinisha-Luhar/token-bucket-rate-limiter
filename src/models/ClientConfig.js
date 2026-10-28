@@ -34,7 +34,7 @@ const clientConfigSchema = new mongoose.Schema({
             return this.algorithm === "TOKEN_BUCKET"
         }
     },
-    windowSizeMS: {
+    windowSizeMs: {
         type: Number,
       min: 1,
       max: 86400000,
@@ -45,7 +45,7 @@ const clientConfigSchema = new mongoose.Schema({
     windowLimit: {
       type: Number,
       min: 1,
-      max: 1000000,
+      max: 10000,
       required: function () {
         return this.algorithm === "SLIDING_WINDOW";
       },

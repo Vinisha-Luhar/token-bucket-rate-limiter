@@ -1,15 +1,21 @@
 const express = require("express");
 const helmet = require("helmet");
 
-const health_routes = require("./routes/health_routes.js");
-const admin_routes = require("./routes/admin_routes.js");
+const healthRoutes = require("./routes/health_routes.js");
+const adminRoutes = require("./routes/admin_routes.js");
+const ratelimitRoutes = require("./routes/ratelimit_routes.js");
 
 const app = express();
 
 app.use(helmet());
 app.use(express.json({limit:"16kb"}));
-app.use(health_routes);
-app.use("/api/v1/admin",admin_routes);
+
+app.use(healthRoutes);
+
+app.use("/api/v1/admin",adminRoutes);
+
+app.use("/api/v1/ratelimit",ratelimitRoutes);
+
 
 app.use((req,res) => {
     return res.status(404).json({

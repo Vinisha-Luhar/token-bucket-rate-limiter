@@ -6,13 +6,15 @@ const slidingWindowStateSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    timestamps: {
+    requestTimestamps: {
         type: [Date],
         default: [],
-        validate: function (timestamps) {
+        validate: {
+            validator: function (timestamps) {
             return timestamps.length <= 10000;
-        },
-        message: "Too Many Timestamps stored in the window"
+            },
+            message: "Too many timestamps stored in the window"
+        }
     }
 },
 {

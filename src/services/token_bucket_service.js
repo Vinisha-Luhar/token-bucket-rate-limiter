@@ -1,3 +1,4 @@
+
 const ClientConfig = require("../models/ClientConfig");
 const BucketState = require("../models/BucketState");
 
@@ -99,10 +100,8 @@ class TokenBucketService {
       }
     ).lean();
 
-    console.log("Updated bucket state:", updatedState);
-    // 5. If no document was updated, there wasn't a full token available.
+    // 5. If no document was updated, the request was rejected.
     if (!updatedState) {
-      console.log("No token consumed. Checking existing bucket state.");
       const state = await BucketState.findOne({ clientKey }).lean();
 
       if (!state) {
@@ -111,6 +110,7 @@ class TokenBucketService {
         throw error;
       }
 
+      // Calculate the current token count using the latest bucket state.
       const elapsedSeconds = Math.max(
         0,
         (Date.now() - state.lastRefillAt.getTime()) / 1000
@@ -121,6 +121,7 @@ class TokenBucketService {
         state.tokens + elapsedSeconds * requestsPerSecond
       );
 
+      // Seconds until at least one token becomes available.
       const retryAfterSeconds = Math.max(
         1,
         Math.ceil((1 - currentTokens) / requestsPerSecond)
@@ -131,18 +132,25 @@ class TokenBucketService {
         clientKey,
         limit: burstSize,
         remaining: 0,
-        retryAfterSeconds
+        retryAfterSeconds,
+        resetAfterSeconds: retryAfterSeconds
       };
     }
 
-    console.log("Tokens remaining in MongoDB:", updatedState.tokens);
-    // 6. Return the decision and remaining tokens.
+    // 6. Calculate the time until the bucket becomes completely full.
+    // updatedState.tokens is the actual token count after consuming one token.
+    const resetAfterSeconds = Math.ceil(
+      (burstSize - updatedState.tokens) / requestsPerSecond
+    );
+
+    // 7. Return the decision and remaining tokens.
     return {
       allowed: true,
       clientKey,
       limit: burstSize,
       remaining: Math.floor(updatedState.tokens),
-      retryAfterSeconds: 0
+      retryAfterSeconds: 0,
+      resetAfterSeconds
     };
   }
 }

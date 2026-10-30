@@ -101,7 +101,7 @@ class SlidingWindowService{
         });
 
 
-        const updatedState = result.value ?? result;
+        const updatedState = result?.value ?? result;
 
         if(!updatedState || !updatedState.requestTimestamps)
         {

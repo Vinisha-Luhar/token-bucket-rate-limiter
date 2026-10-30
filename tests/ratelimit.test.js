@@ -84,4 +84,66 @@ describe("Rate Limiter API", () => {
         expect(response.body.success).toBe(false);
     });
 
+    it("Should allow the request within the sliding window limit", async() => {
+        await createClientConfig({
+            clientKey: "sliding-test-client",
+            algorithm: "SLIDING_WINDOW",
+            windowSizeMs: 60000,
+            windowLimit: 2
+        });
+
+        const firstResponse= await request(app)
+        .post("/api/v1/ratelimit/check")
+        .set("x-client-key","sliding-test-client");
+
+        expect(firstResponse.status).toBe(200);
+        expect(firstResponse.body.data.allowed).toBe(true);
+
+        const secondResponse = await request(app)
+        .post("/api/v1/ratelimit/check")
+        .set("x-client-key","sliding-test-client");
+
+        expect(secondResponse.status).toBe(200);
+        expect(secondResponse.body.data.allowed).toBe(true);
+        expect(secondResponse.body.data.remaining).toBe(0);
+    });
+
+    it("Should return 429 when the sliding window llimit is exceeded", async() => {
+        await createClientConfig({
+            clientKey: "sliding-test-client",
+            algorithm: "SLIDING_WINDOW",
+            windowSizeMs: 60000,
+            windowLimit: 2
+        });
+
+         const firstResponse= await request(app)
+        .post("/api/v1/ratelimit/check")
+        .set("x-client-key","sliding-test-client");
+
+        expect(firstResponse.status).toBe(200);
+
+        const secondResponse = await request(app)
+        .post("/api/v1/ratelimit/check")
+        .set("x-client-key","sliding-test-client");
+
+        expect(secondResponse.status).toBe(200);
+
+        const thirdResponse = await request(app)
+        .post("/api/v1/ratelimit/check")
+        .set("x-client-key","sliding-test-client");
+
+        expect(thirdResponse.status).toBe(429);
+        expect(thirdResponse.body.success).toBe(false);
+        expect(thirdResponse.body.data.allowed).toBe(false);
+        expect(thirdResponse.headers["retry-after"]).toBeDefined();
+    });
+
+    it("Should return 404 for unknown sliding window client", async() => {
+        const response = await request(app)
+        .post("/api/v1/ratelimit/check")
+        .set("x-client-key","unknown-sliding-client");
+
+        expect(response.status).toBe(404);
+    });
+
 });

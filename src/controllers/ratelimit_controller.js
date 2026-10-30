@@ -14,12 +14,19 @@ class RateLimitController {
         });
       }
 
-      const config = await clientConfigModel.findOne({clientKey, isActive: true}).lean();
+      const config = await clientConfigModel.findOne({clientKey}).lean();
 
       if(!config){
         return res.status(404).json({
           success: false,
           message: "Client not found or inactive"
+        });
+      }
+
+      if(!config.isActive){
+        return res.status(403).json({
+          success: false,
+          message: "Client is Inactive"
         });
       }
 
